@@ -1,0 +1,6 @@
+{
+  "name": "Diseño de Bobinas",
+  "description": "Aplicación para el diseño, cálculo y simulación interactiva de bobinas e inductores eléctricos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
