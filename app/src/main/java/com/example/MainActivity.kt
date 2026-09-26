@@ -18,6 +18,7 @@ import com.example.ui.screen.design.DesignScreen
 import com.example.ui.screen.formulas.FormulasScreen
 import com.example.ui.screen.settings.SettingsScreen
 import com.example.ui.screen.settings.SettingsViewModel
+import com.example.ui.screen.wirespecs.WireSpecsScreen
 import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
@@ -51,6 +52,9 @@ fun CoilAppNavigation() {
                 },
                 onNavigateToFormulas = {
                     navController.navigate(Screen.Formulas.route)
+                },
+                onNavigateToWireSpecs = {
+                    navController.navigate(Screen.WireSpecs.route)
                 }
             )
         }
@@ -67,6 +71,14 @@ fun CoilAppNavigation() {
 
         composable(Screen.Formulas.route) {
             FormulasScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.WireSpecs.route) {
+            WireSpecsScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }

@@ -72,4 +72,37 @@ class ExampleUnitTest {
         assertTrue(result.inductanceHenrys > 0)
         assertTrue(result.magneticFluxWebers > 0)
     }
+
+    @Test
+    fun testEnamelledWireSpecs() {
+        val spec18 = com.example.model.EnamelledWireSpec.findByAwg(18)
+        org.junit.Assert.assertNotNull(spec18)
+        spec18!!
+
+        // AWG 18 bare diameter is ~1.024 mm
+        assertTrue(spec18.bareDiameterMm in 1.0..1.05)
+        // Grade 1 enamel increases outer diameter
+        assertTrue(spec18.grade1DiameterMm > spec18.bareDiameterMm)
+        // Grade 2 enamel has even thicker coating than Grade 1
+        assertTrue(spec18.grade2DiameterMm > spec18.grade1DiameterMm)
+
+        // Resistance for AWG 18 at 20°C: ~0.020 Ω/m
+        assertTrue(spec18.resistancePerMeterOhm in 0.018..0.023)
+
+        // Thermal variation: at 100°C resistance increases by ~31.4%
+        val rAt100 = spec18.resistanceAtTemperature(100.0)
+        assertTrue("Resistance must increase with temperature", rAt100 > spec18.resistancePerMeterOhm)
+        val ratio = rAt100 / spec18.resistancePerMeterOhm
+        assertTrue("Ratio should be approx 1 + 0.00393*80 ≈ 1.314", ratio in 1.30..1.33)
+    }
+
+    @Test
+    fun testWireVarnishClasses() {
+        val classes = com.example.model.WireVarnishClass.ALL_CLASSES
+        assertTrue("Should have multiple standard thermal classes", classes.size >= 4)
+        val classH = classes.find { it.className.contains("180") }
+        org.junit.Assert.assertNotNull(classH)
+        assertEquals(180, classH!!.maxTemperatureC)
+        assertTrue(classH.baseResin.isNotEmpty())
+    }
 }

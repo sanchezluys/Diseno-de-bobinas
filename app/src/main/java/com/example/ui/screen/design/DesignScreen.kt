@@ -1,6 +1,8 @@
 package com.example.ui.screen.design
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -28,8 +30,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Functions
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayCircle
@@ -98,12 +103,35 @@ fun DesignScreen(
     viewModel: CoilViewModel,
     onNavigateToSettings: () -> Unit,
     onNavigateToFormulas: () -> Unit,
+    onNavigateToWireSpecs: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val preferences by viewModel.userPreferences.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
+
+    var step1Expanded by remember { mutableStateOf(state.inductorType == null) }
+    var step2Expanded by remember { mutableStateOf(false) }
+    var step3Expanded by remember { mutableStateOf(false) }
+    var step4Expanded by remember { mutableStateOf(false) }
+    var step5Expanded by remember { mutableStateOf(false) }
+    var step6Expanded by remember { mutableStateOf(false) }
+    var step7Expanded by remember { mutableStateOf(false) }
+    var step8Expanded by remember { mutableStateOf(false) }
+
+    androidx.compose.runtime.LaunchedEffect(state.inductorType) {
+        if (state.inductorType == null) {
+            step1Expanded = true
+            step2Expanded = false
+            step3Expanded = false
+            step4Expanded = false
+            step5Expanded = false
+            step6Expanded = false
+            step7Expanded = false
+            step8Expanded = false
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -124,6 +152,15 @@ fun DesignScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = onNavigateToWireSpecs,
+                        modifier = Modifier.testTag("wire_specs_topbar_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                            contentDescription = "Manual de cables esmaltados"
+                        )
+                    }
                     IconButton(
                         onClick = onNavigateToFormulas,
                         modifier = Modifier.testTag("formulas_topbar_button")
@@ -161,9 +198,25 @@ fun DesignScreen(
             PresetsBar(
                 onSelectPreset = { preset ->
                     viewModel.loadPreset(preset)
+                    step1Expanded = false
+                    step2Expanded = false
+                    step3Expanded = false
+                    step4Expanded = false
+                    step5Expanded = false
+                    step6Expanded = false
+                    step7Expanded = false
+                    step8Expanded = false
                 },
                 onReset = {
                     viewModel.resetDesign()
+                    step1Expanded = true
+                    step2Expanded = false
+                    step3Expanded = false
+                    step4Expanded = false
+                    step5Expanded = false
+                    step6Expanded = false
+                    step7Expanded = false
+                    step8Expanded = false
                 }
             )
 
@@ -172,7 +225,66 @@ fun DesignScreen(
                 stepNumber = 1,
                 title = "Tipo de Inductor",
                 isComplete = state.isStep1Complete,
-                summary = state.inductorType?.title
+                summary = state.inductorType?.title,
+                isExpanded = step1Expanded,
+                onToggleExpand = { step1Expanded = !step1Expanded },
+                collapsedContent = {
+                    state.inductorType?.let { type ->
+                        OutlinedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { step1Expanded = true }
+                                .testTag("step1_collapsed_card"),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+                            colors = CardDefaults.outlinedCardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = type.icon,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = type.title,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = type.description,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Text(
+                                    text = "Cambiar",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     InductorType.entries.forEach { type ->
@@ -180,7 +292,11 @@ fun DesignScreen(
                         OutlinedCard(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { viewModel.selectInductorType(type) }
+                                .clickable {
+                                    viewModel.selectInductorType(type)
+                                    step1Expanded = false
+                                    step2Expanded = true
+                                }
                                 .testTag("type_card_${type.name.lowercase()}"),
                             shape = RoundedCornerShape(12.dp),
                             border = BorderStroke(
@@ -243,7 +359,9 @@ fun DesignScreen(
                         false -> "Sin núcleo (Aire)"
                         true -> state.coreMaterial?.displayName
                         null -> null
-                    }
+                    },
+                    isExpanded = step2Expanded,
+                    onToggleExpand = { step2Expanded = !step2Expanded }
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(
@@ -252,7 +370,11 @@ fun DesignScreen(
                         ) {
                             FilterChip(
                                 selected = state.hasCore == false,
-                                onClick = { viewModel.setHasCore(false) },
+                                onClick = {
+                                    viewModel.setHasCore(false)
+                                    step2Expanded = false
+                                    step3Expanded = true
+                                },
                                 label = { Text("Sin núcleo (Aire)") },
                                 modifier = Modifier
                                     .weight(1f)
@@ -261,7 +383,10 @@ fun DesignScreen(
                             )
                             FilterChip(
                                 selected = state.hasCore == true,
-                                onClick = { viewModel.setHasCore(true) },
+                                onClick = {
+                                    viewModel.setHasCore(true)
+                                    step2Expanded = true
+                                },
                                 label = { Text("Con núcleo") },
                                 modifier = Modifier
                                     .weight(1f)
@@ -283,7 +408,11 @@ fun DesignScreen(
                                     OutlinedCard(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable { viewModel.selectCoreMaterial(material) }
+                                            .clickable {
+                                                viewModel.selectCoreMaterial(material)
+                                                step2Expanded = false
+                                                step3Expanded = true
+                                            }
                                             .testTag("material_${material.name.lowercase()}"),
                                         shape = RoundedCornerShape(8.dp),
                                         border = BorderStroke(
@@ -343,7 +472,9 @@ fun DesignScreen(
                     stepNumber = 3,
                     title = "Tipo de Corriente",
                     isComplete = state.isStep3Complete,
-                    summary = state.currentType?.label
+                    summary = state.currentType?.label,
+                    isExpanded = step3Expanded,
+                    onToggleExpand = { step3Expanded = !step3Expanded }
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(
@@ -353,7 +484,11 @@ fun DesignScreen(
                             CurrentType.entries.forEach { cur ->
                                 val isCurSelected = state.currentType == cur
                                 OutlinedButton(
-                                    onClick = { viewModel.selectCurrentType(cur) },
+                                    onClick = {
+                                        viewModel.selectCurrentType(cur)
+                                        step3Expanded = false
+                                        step4Expanded = true
+                                    },
                                     modifier = Modifier
                                         .weight(1f)
                                         .testTag("button_current_${cur.name.lowercase()}"),
@@ -399,9 +534,11 @@ fun DesignScreen(
                     stepNumber = 4,
                     title = "Diámetro de la Bobina",
                     isComplete = state.isStep4Complete,
-                    summary = if (state.isStep4Complete) "${state.diameterInput} ${state.diameterUnit.symbol}" else null
+                    summary = if (state.isStep4Complete) "${state.diameterInput} ${state.diameterUnit.symbol}" else null,
+                    isExpanded = step4Expanded,
+                    onToggleExpand = { step4Expanded = !step4Expanded }
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -413,6 +550,14 @@ fun DesignScreen(
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Decimal,
                                     imeAction = ImeAction.Next
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onNext = {
+                                        if (state.isStep4Complete) {
+                                            step4Expanded = false
+                                            step5Expanded = true
+                                        }
+                                    }
                                 ),
                                 modifier = Modifier
                                     .weight(1f)
@@ -455,6 +600,21 @@ fun DesignScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+
+                        Button(
+                            onClick = {
+                                if (state.isStep4Complete) {
+                                    step4Expanded = false
+                                    step5Expanded = true
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("confirm_diameter_button"),
+                            enabled = state.isStep4Complete
+                        ) {
+                            Text("Continuar con este diámetro")
+                        }
                     }
                 }
             }
@@ -469,12 +629,18 @@ fun DesignScreen(
                     stepNumber = 5,
                     title = "Calibre de Cable Comercial",
                     isComplete = state.isStep5Complete,
-                    summary = state.selectedGauge?.format(preferences.gaugeDisplayMode)
+                    summary = state.selectedGauge?.format(preferences.gaugeDisplayMode),
+                    isExpanded = step5Expanded,
+                    onToggleExpand = { step5Expanded = !step5Expanded }
                 ) {
                     WireGaugeSelector(
                         selectedGauge = state.selectedGauge,
                         displayMode = preferences.gaugeDisplayMode,
-                        onSelectGauge = { viewModel.selectWireGauge(it) }
+                        onSelectGauge = { gauge ->
+                            viewModel.selectWireGauge(gauge)
+                            step5Expanded = false
+                            step6Expanded = true
+                        }
                     )
                 }
             }
@@ -489,7 +655,9 @@ fun DesignScreen(
                     stepNumber = 6,
                     title = "Número de Vueltas (Espiras)",
                     isComplete = state.isStep6Complete,
-                    summary = if (state.isStep6Complete) "N = ${state.turnsInput} vueltas" else null
+                    summary = if (state.isStep6Complete) "N = ${state.turnsInput} vueltas" else null,
+                    isExpanded = step6Expanded,
+                    onToggleExpand = { step6Expanded = !step6Expanded }
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
@@ -500,7 +668,19 @@ fun DesignScreen(
                             },
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Number,
-                                imeAction = if (state.inductorType == InductorType.TRANSFORMADOR || state.currentType == CurrentType.AC) ImeAction.Next else ImeAction.Done
+                                imeAction = if (state.inductorType == InductorType.TRANSFORMADOR) ImeAction.Next else ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    if (state.isStep6Complete) {
+                                        step6Expanded = false
+                                        if (state.currentType == CurrentType.AC) {
+                                            step7Expanded = true
+                                        } else {
+                                            step8Expanded = true
+                                        }
+                                    }
+                                }
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -516,13 +696,44 @@ fun DesignScreen(
                                 label = { Text("Vueltas Secundario (N2)") },
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Number,
-                                    imeAction = ImeAction.Next
+                                    imeAction = ImeAction.Done
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        if (state.isStep6Complete) {
+                                            step6Expanded = false
+                                            if (state.currentType == CurrentType.AC) {
+                                                step7Expanded = true
+                                            } else {
+                                                step8Expanded = true
+                                            }
+                                        }
+                                    }
                                 ),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .testTag("input_secondary_turns"),
                                 singleLine = true
                             )
+                        }
+
+                        Button(
+                            onClick = {
+                                if (state.isStep6Complete) {
+                                    step6Expanded = false
+                                    if (state.currentType == CurrentType.AC) {
+                                        step7Expanded = true
+                                    } else {
+                                        step8Expanded = true
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("confirm_turns_button"),
+                            enabled = state.isStep6Complete
+                        ) {
+                            Text("Continuar con estas vueltas")
                         }
                     }
                 }
@@ -538,7 +749,9 @@ fun DesignScreen(
                     stepNumber = 7,
                     title = "Frecuencia de Trabajo",
                     isComplete = state.isStep7Complete,
-                    summary = if (state.isStep7Complete) "${state.frequencyInput} ${state.frequencyUnit.symbol}" else null
+                    summary = if (state.isStep7Complete) "${state.frequencyInput} ${state.frequencyUnit.symbol}" else null,
+                    isExpanded = step7Expanded,
+                    onToggleExpand = { step7Expanded = !step7Expanded }
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(
@@ -552,6 +765,14 @@ fun DesignScreen(
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Decimal,
                                     imeAction = ImeAction.Next
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onNext = {
+                                        if (state.isStep7Complete) {
+                                            step7Expanded = false
+                                            step8Expanded = true
+                                        }
+                                    }
                                 ),
                                 modifier = Modifier
                                     .weight(1f)
@@ -574,6 +795,21 @@ fun DesignScreen(
                                 }
                             }
                         }
+
+                        Button(
+                            onClick = {
+                                if (state.isStep7Complete) {
+                                    step7Expanded = false
+                                    step8Expanded = true
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("confirm_frequency_button"),
+                            enabled = state.isStep7Complete
+                        ) {
+                            Text("Continuar con esta frecuencia")
+                        }
                     }
                 }
             }
@@ -588,7 +824,9 @@ fun DesignScreen(
                     stepNumber = if (state.currentType == CurrentType.AC) 8 else 7,
                     title = "Voltaje de Simulación",
                     isComplete = state.isStep8Complete,
-                    summary = if (state.isStep8Complete) "${state.voltageInput} V" else null
+                    summary = if (state.isStep8Complete) "${state.voltageInput} V" else null,
+                    isExpanded = step8Expanded,
+                    onToggleExpand = { step8Expanded = !step8Expanded }
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
@@ -603,6 +841,7 @@ fun DesignScreen(
                                 onDone = {
                                     focusManager.clearFocus()
                                     viewModel.calculate()
+                                    step8Expanded = false
                                 }
                             ),
                             modifier = Modifier
@@ -615,6 +854,7 @@ fun DesignScreen(
                             onClick = {
                                 focusManager.clearFocus()
                                 viewModel.calculate()
+                                step8Expanded = false
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -679,10 +919,17 @@ private fun StepCard(
     title: String,
     isComplete: Boolean,
     summary: String?,
+    isExpanded: Boolean = true,
+    onToggleExpand: (() -> Unit)? = null,
+    collapsedContent: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
+    val canToggle = onToggleExpand != null
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("step_card_$stepNumber"),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -695,11 +942,20 @@ private fun StepCard(
                 .padding(16.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (canToggle) Modifier.clickable { onToggleExpand() }
+                        else Modifier
+                    )
+                    .testTag("step_header_$stepNumber"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
                     Surface(
                         shape = CircleShape,
                         color = if (isComplete) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
@@ -731,24 +987,68 @@ private fun StepCard(
                     )
                 }
 
-                if (summary != null) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                    ) {
-                        Text(
-                            text = summary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (summary != null) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                        ) {
+                            Text(
+                                text = summary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    if (canToggle) {
+                        IconButton(
+                            onClick = onToggleExpand,
+                            modifier = Modifier
+                                .size(28.dp)
+                                .testTag("step_toggle_$stepNumber")
+                        ) {
+                            Icon(
+                                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (isExpanded) "Recoger persiana" else "Desplegar persiana",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            content()
+            // Vista resumida animada cuando la persiana se recoge
+            AnimatedVisibility(
+                visible = !isExpanded && isComplete && collapsedContent != null,
+                enter = fadeIn(animationSpec = tween(200)) + expandVertically(animationSpec = tween(300, easing = FastOutSlowInEasing)),
+                exit = fadeOut(animationSpec = tween(150)) + shrinkVertically(animationSpec = tween(250, easing = FastOutSlowInEasing))
+            ) {
+                if (collapsedContent != null) {
+                    Column {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        collapsedContent()
+                    }
+                }
+            }
+
+            // Persiana animada que se despliega o se recoge
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = fadeIn(animationSpec = tween(250)) + expandVertically(animationSpec = tween(350, easing = FastOutSlowInEasing)),
+                exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(300, easing = FastOutSlowInEasing))
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    content()
+                }
+            }
         }
     }
 }
