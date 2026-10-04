@@ -1,5 +1,6 @@
 package com.example.ui.screen.wirespecs
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -84,6 +85,8 @@ fun WireSpecsScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BackHandler(onBack = onNavigateBack)
+
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabTitles = listOf("Calibres y Resistencia", "Aislamientos Teóricos", "Resistencia Térmica")
 

@@ -7,6 +7,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -99,6 +100,8 @@ fun SettingsScreen(
         @Suppress("DEPRECATION")
         packageInfo?.versionCode?.toString() ?: BuildConfig.VERSION_CODE.toString()
     }
+
+    BackHandler(onBack = onNavigateBack)
 
     Scaffold(
         modifier = modifier.fillMaxSize(),

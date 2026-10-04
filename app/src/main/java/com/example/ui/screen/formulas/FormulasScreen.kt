@@ -1,5 +1,6 @@
 package com.example.ui.screen.formulas
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -41,6 +42,8 @@ fun FormulasScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BackHandler(onBack = onNavigateBack)
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
