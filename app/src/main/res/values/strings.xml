@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">Diseño de Bobinas</string>
+    <string name="update_available_title">Actualización disponible en Google Play</string>
+    <string name="update_available_message">Hay una nueva versión con mejoras disponible para descargar.</string>
+    <string name="update_downloading_title">Descargando actualización…</string>
+    <string name="update_downloaded_message">Actualización descargada y lista para instalar.</string>
+    <string name="update_action_update">Actualizar</string>
+    <string name="update_action_later">Más tarde</string>
+    <string name="update_action_restart">Reiniciar</string>
+    <string name="update_check_button">Buscar actualizaciones</string>
+    <string name="update_status_up_to_date">Tu aplicación está actualizada.</string>
+    <string name="update_status_unavailable">Solo disponible cuando se instala desde Google Play Store.</string>
+    <string name="update_status_failed">No se pudo iniciar la actualización. Intenta más tarde.</string>
 </resources>

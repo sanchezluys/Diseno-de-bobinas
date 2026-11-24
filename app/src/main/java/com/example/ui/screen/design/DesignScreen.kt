@@ -15,12 +15,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -66,11 +77,16 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,6 +96,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -88,6 +105,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
 import com.example.model.CalculationResult
 import com.example.model.CoilDesignState
 import com.example.model.CoreMaterial
@@ -97,6 +115,8 @@ import com.example.model.InductorType
 import com.example.model.LengthUnit
 import com.example.model.UserPreferences
 import com.example.model.WireGauge
+import com.example.ui.components.UpdateNotificationBanner
+import com.example.update.InAppUpdateUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -105,12 +125,19 @@ fun DesignScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToFormulas: () -> Unit,
     onNavigateToWireSpecs: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    updateState: InAppUpdateUiState = InAppUpdateUiState.Idle,
+    onStartUpdate: () -> Unit = {},
+    onDismissUpdateBanner: () -> Unit = {},
+    onCompleteDownloadedUpdate: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val preferences by viewModel.userPreferences.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val downloadedMessage = stringResource(R.string.update_downloaded_message)
+    val restartLabel = stringResource(R.string.update_action_restart)
 
     var step1Expanded by remember { mutableStateOf(state.inductorType == null) }
     var step2Expanded by remember { mutableStateOf(false) }
@@ -134,10 +161,37 @@ fun DesignScreen(
         }
     }
 
+    LaunchedEffect(updateState) {
+        if (updateState is InAppUpdateUiState.Downloaded) {
+            val result = snackbarHostState.showSnackbar(
+                message = downloadedMessage,
+                actionLabel = restartLabel,
+                duration = SnackbarDuration.Indefinite
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                onCompleteDownloadedUpdate()
+            }
+        }
+    }
+
+    val safeTopHorizontalInsets = WindowInsets.systemBars
+        .union(WindowInsets.displayCutout)
+        .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = safeTopHorizontalInsets,
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .imePadding()
+            )
+        },
         topBar = {
             TopAppBar(
+                windowInsets = safeTopHorizontalInsets,
                 title = {
                     Column {
                         Text(
@@ -191,10 +245,19 @@ fun DesignScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
+                .imePadding()
                 .verticalScroll(scrollState)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            UpdateNotificationBanner(
+                updateState = updateState,
+                onStartUpdate = onStartUpdate,
+                onDismissAvailable = onDismissUpdateBanner,
+                onCompleteUpdate = onCompleteDownloadedUpdate
+            )
+
             // Preset / Quick-load bar for students
             PresetsBar(
                 onSelectPreset = { preset ->
@@ -907,7 +970,8 @@ fun DesignScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
     }
 }

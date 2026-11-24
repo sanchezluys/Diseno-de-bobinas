@@ -6,11 +6,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -44,10 +53,16 @@ fun FormulasScreen(
 ) {
     BackHandler(onBack = onNavigateBack)
 
+    val safeTopHorizontalInsets = WindowInsets.systemBars
+        .union(WindowInsets.displayCutout)
+        .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = safeTopHorizontalInsets,
         topBar = {
             TopAppBar(
+                windowInsets = safeTopHorizontalInsets,
                 title = {
                     Text(
                         text = "Fórmulas y Teoría",
@@ -76,6 +91,7 @@ fun FormulasScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -159,6 +175,8 @@ fun FormulasScreen(
                 ),
                 explanation = "El flujo magnético es proporcional a la corriente inducida y al número de enlaces de flujo magnético por vuelta."
             )
+
+            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
     }
 }

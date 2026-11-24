@@ -14,12 +14,22 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,9 +42,12 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Tag
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -48,6 +61,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -64,13 +78,19 @@ import com.example.R
 import com.example.model.GaugeDisplayMode
 import com.example.model.LengthUnit
 import com.example.model.WireGauge
+import com.example.update.InAppUpdateUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    updateState: InAppUpdateUiState = InAppUpdateUiState.Idle,
+    onCheckForUpdates: () -> Unit = {},
+    onStartUpdate: () -> Unit = {},
+    onCompleteDownloadedUpdate: () -> Unit = {},
+    onClearTransientUpdateStatus: () -> Unit = {}
 ) {
     val preferences by viewModel.userPreferences.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -103,10 +123,20 @@ fun SettingsScreen(
 
     BackHandler(onBack = onNavigateBack)
 
+    DisposableEffect(Unit) {
+        onDispose { onClearTransientUpdateStatus() }
+    }
+
+    val safeTopHorizontalInsets = WindowInsets.systemBars
+        .union(WindowInsets.displayCutout)
+        .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = safeTopHorizontalInsets,
         topBar = {
             TopAppBar(
+                windowInsets = safeTopHorizontalInsets,
                 title = {
                     Text(
                         text = "Configuración",
@@ -135,6 +165,8 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -440,8 +472,93 @@ fun SettingsScreen(
                             )
                         }
                     }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                    // Play Store In-App Update check row
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        when (updateState) {
+                            is InAppUpdateUiState.Available -> {
+                                Button(
+                                    onClick = onStartUpdate,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("settings_update_now_button"),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SystemUpdate,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.update_available_title))
+                                }
+                            }
+                            is InAppUpdateUiState.Downloaded -> {
+                                Button(
+                                    onClick = onCompleteDownloadedUpdate,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("settings_restart_update_button"),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("${stringResource(R.string.update_action_restart)} (${stringResource(R.string.update_downloaded_message)})")
+                                }
+                            }
+                            else -> {
+                                OutlinedButton(
+                                    onClick = onCheckForUpdates,
+                                    enabled = updateState !is InAppUpdateUiState.Checking &&
+                                        updateState !is InAppUpdateUiState.Downloading,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("settings_check_updates_button"),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    if (updateState is InAppUpdateUiState.Checking) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            strokeWidth = 2.dp
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.SystemUpdate,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
+                                    Text(stringResource(R.string.update_check_button))
+                                }
+                            }
+                        }
+
+                        val statusText = when (updateState) {
+                            is InAppUpdateUiState.UpToDate -> stringResource(R.string.update_status_up_to_date)
+                            is InAppUpdateUiState.Unavailable -> stringResource(R.string.update_status_unavailable)
+                            is InAppUpdateUiState.Failed -> stringResource(updateState.messageRes)
+                            is InAppUpdateUiState.Downloading -> if (updateState.progressPercent != null) {
+                                "${stringResource(R.string.update_downloading_title)} (${updateState.progressPercent}%)"
+                            } else {
+                                stringResource(R.string.update_downloading_title)
+                            }
+                            else -> null
+                        }
+                        if (statusText != null) {
+                            Text(
+                                text = statusText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.testTag("settings_update_status_text")
+                            )
+                        }
+                    }
                 }
             }
+
+            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
     }
 }

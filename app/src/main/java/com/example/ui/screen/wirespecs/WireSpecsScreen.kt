@@ -16,12 +16,22 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -90,10 +100,16 @@ fun WireSpecsScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabTitles = listOf("Calibres y Resistencia", "Aislamientos Teóricos", "Resistencia Térmica")
 
+    val safeTopHorizontalInsets = WindowInsets.systemBars
+        .union(WindowInsets.displayCutout)
+        .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = safeTopHorizontalInsets,
         topBar = {
             TopAppBar(
+                windowInsets = safeTopHorizontalInsets,
                 title = {
                     Column {
                         Text(
@@ -129,6 +145,8 @@ fun WireSpecsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
+                .imePadding()
         ) {
             PrimaryTabRow(
                 selectedTabIndex = selectedTab,
@@ -502,6 +520,8 @@ private fun WireGaugesCatalogTab() {
                 }
             }
         }
+
+        Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }
 }
 
@@ -682,6 +702,8 @@ private fun WireInsulationTheoryTab() {
                 }
             }
         }
+
+        Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }
 }
 
@@ -899,6 +921,8 @@ private fun WireThermalResinTab() {
                 }
             }
         }
+
+        Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }
 }
 
